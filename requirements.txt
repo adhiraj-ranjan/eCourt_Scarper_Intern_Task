@@ -1,0 +1,5 @@
+# Tesseract-OCR needs to be in path
+# apt install tesseract-ocr
+pytesseract
+pillow
+Flask

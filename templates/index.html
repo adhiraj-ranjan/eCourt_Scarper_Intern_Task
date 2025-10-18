@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eCourt Scraper Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 2rem;
+        }
+        .dashboard-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .form-select {
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-container">
+            <div class="header">
+                <h1 class="display-5">eCourt Scraper Dashboard</h1>
+                <p class="text-muted">Select a state to begin</p>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label for="stateSelect" class="form-label">Select State</label>
+                        <select class="form-select" id="stateSelect" name="sess_state_code">
+                            <option value="0">Select state</option>
+                            <option value="28">Andaman and Nicobar</option>
+                            <option value="2">Andhra Pradesh</option>
+                            <option value="36">Arunachal Pradesh</option>
+                            <option value="6">Assam</option>
+                            <option value="8">Bihar</option>
+                            <option value="27">Chandigarh</option>
+                            <option value="18">Chhattisgarh</option>
+                            <option value="26">Delhi</option>
+                            <option value="30">Goa</option>
+                            <option value="17">Gujarat</option>
+                            <option value="14">Haryana</option>
+                            <option value="5">Himachal Pradesh</option>
+                            <option value="12">Jammu and Kashmir</option>
+                            <option value="7">Jharkhand</option>
+                            <option value="3">Karnataka</option>
+                            <option value="4">Kerala</option>
+                            <option value="33">Ladakh</option>
+                            <option value="37">Lakshadweep</option>
+                            <option value="23">Madhya Pradesh</option>
+                            <option value="1">Maharashtra</option>
+                            <option value="25">Manipur</option>
+                            <option value="21">Meghalaya</option>
+                            <option value="19">Mizoram</option>
+                            <option value="34">Nagaland</option>
+                            <option value="11">Odisha</option>
+                            <option value="35">Puducherry</option>
+                            <option value="22">Punjab</option>
+                            <option value="9">Rajasthan</option>
+                            <option value="24">Sikkim</option>
+                            <option value="10">Tamil Nadu</option>
+                            <option value="29">Telangana</option>
+                            <option value="38">The Dadra And Nagar Haveli And Daman And Diu</option>
+                            <option value="20">Tripura</option>
+                            <option value="15">Uttarakhand</option>
+                            <option value="13">Uttar Pradesh</option>
+                            <option value="16">West Bengal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="districtSelect" class="form-label">Select District</label>
+                        <select class="form-select" id="districtSelect" name="district" disabled>
+                            <option value="" selected disabled>Choose a state first...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.getElementById('stateSelect').addEventListener('change', function() {
+            const stateCode = this.value;
+            const districtSelect = document.getElementById('districtSelect');
+            
+            // Clear current districts
+            districtSelect.innerHTML = '<option value="" selected disabled>Loading districts...</option>';
+            districtSelect.disabled = true;
+
+            // Make POST request to fetch districts
+            fetch('/api/districts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    state_code: stateCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear loading message
+                districtSelect.innerHTML = '<option value="" selected disabled>Select a district...</option>';
+                
+                // Add districts to dropdown
+                Object.entries(data).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    districtSelect.appendChild(option);
+                });
+                
+                // Enable the district dropdown
+                districtSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error fetching districts:', error);
+                districtSelect.innerHTML = '<option value="" selected disabled>Error loading districts. Please try again.</option>';
+            });
+        });
+    </script>
+</body>
+</html>
