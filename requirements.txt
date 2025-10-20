@@ -3,3 +3,6 @@
 pytesseract
 pillow
 Flask
+weasyprint
+requests
+beautifulsoup4

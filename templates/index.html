@@ -33,7 +33,7 @@
     <div class="container">
         <div class="dashboard-container">
             <div class="header">
-                <h1 class="display-5">eCourt Scraper Dashboard</h1>
+                <h1 class="display-5">eCourt CauseList Scraper</h1>
                 <p class="text-muted">Select a state to begin</p>
             </div>
             <div class="row">
@@ -82,9 +82,36 @@
                     </div>
                     <div class="mb-3">
                         <label for="districtSelect" class="form-label">Select District</label>
-                        <select class="form-select" id="districtSelect" name="district" disabled>
-                            <option value="" selected disabled>Choose a state first...</option>
+                        <select class="form-select" id="districtSelect" name="district_code" disabled>
+                            <option value="0">Choose a state first...</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="complexSelect" class="form-label">Select Court Complex</label>
+                        <select class="form-select" id="complexSelect" name="complex_code" disabled>
+                            <option value="0">Choose a district first...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="establishmentSelect" class="form-label">Select Court Establishment</label>
+                        <select class="form-select" id="establishmentSelect" name="establishment_code" disabled>
+                            <option value="0">Choose a court complex first...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="courtNameSelect" class="form-label">Select Court Name</label>
+                        <select class="form-select" id="courtNameSelect" name="court_name_code" disabled>
+                            <option value="0">Choose a court establishment first...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dateSelect" class="form-label">Select Date</label>
+                        <input type="date" class="form-control" id="dateSelect" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <button id="generatePdfBtn" class="btn btn-primary w-100" disabled>
+                            Generate CauseList PDF
+                        </button>
                     </div>
                 </div>
             </div>
@@ -95,12 +122,44 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Function to reset dependent dropdowns
+        function resetDropdowns(startFrom) {
+            if (startFrom <= 1) {
+                const districtSelect = document.getElementById('districtSelect');
+                districtSelect.innerHTML = '<option value="0">Choose a state first...</option>';
+                districtSelect.disabled = true;
+            }
+            if (startFrom <= 2) {
+                const complexSelect = document.getElementById('complexSelect');
+                complexSelect.innerHTML = '<option value="0">Choose a district first...</option>';
+                complexSelect.disabled = true;
+            }
+            if (startFrom <= 3) {
+                const establishmentSelect = document.getElementById('establishmentSelect');
+                establishmentSelect.innerHTML = '<option value="0">Choose a court complex first...</option>';
+                establishmentSelect.disabled = true;
+            }
+            if (startFrom <= 4) {
+                const courtNameSelect = document.getElementById('courtNameSelect');
+                courtNameSelect.innerHTML = '<option value="0">Choose a court establishment first...</option>';
+                courtNameSelect.disabled = true;
+            }
+        }
+
+        // Handle state selection
         document.getElementById('stateSelect').addEventListener('change', function() {
             const stateCode = this.value;
             const districtSelect = document.getElementById('districtSelect');
             
-            // Clear current districts
-            districtSelect.innerHTML = '<option value="" selected disabled>Loading districts...</option>';
+            // Reset dependent dropdowns
+            resetDropdowns(1);
+            
+            if (stateCode === "0") {
+                return;
+            }
+
+            // Show loading state
+            districtSelect.innerHTML = '<option value="0">Loading districts...</option>';
             districtSelect.disabled = true;
 
             // Make POST request to fetch districts
@@ -116,7 +175,7 @@
             .then(response => response.json())
             .then(data => {
                 // Clear loading message
-                districtSelect.innerHTML = '<option value="" selected disabled>Select a district...</option>';
+                districtSelect.innerHTML = '<option value="0">Select a district...</option>';
                 
                 // Add districts to dropdown
                 Object.entries(data).forEach(([code, name]) => {
@@ -131,7 +190,240 @@
             })
             .catch(error => {
                 console.error('Error fetching districts:', error);
-                districtSelect.innerHTML = '<option value="" selected disabled>Error loading districts. Please try again.</option>';
+                districtSelect.innerHTML = '<option value="0">Error loading districts. Please try again.</option>';
+            });
+        });
+
+        // Handle district selection
+        document.getElementById('districtSelect').addEventListener('change', function() {
+            const districtCode = this.value;
+            const stateCode = document.getElementById('stateSelect').value;
+            const complexSelect = document.getElementById('complexSelect');
+            
+            // Reset dependent dropdowns
+            resetDropdowns(2);
+            
+            if (districtCode === "0") {
+                return;
+            }
+
+            // Show loading state
+            complexSelect.innerHTML = '<option value="0">Loading court complexes...</option>';
+            complexSelect.disabled = true;
+
+            // Make POST request to fetch court complexes
+            fetch('/api/complexes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    state_code: stateCode,
+                    district_code: districtCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear loading message
+                complexSelect.innerHTML = '<option value="0">Select a court complex...</option>';
+                
+                // Add complexes to dropdown
+                Object.entries(data).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    complexSelect.appendChild(option);
+                });
+                
+                // Enable the complex dropdown
+                complexSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error fetching court complexes:', error);
+                complexSelect.innerHTML = '<option value="0">Error loading court complexes. Please try again.</option>';
+            });
+        });
+
+        // Handle complex selection
+        document.getElementById('complexSelect').addEventListener('change', function() {
+            const complexCode = this.value;
+            const stateCode = document.getElementById('stateSelect').value;
+            const districtCode = document.getElementById('districtSelect').value;
+            const establishmentSelect = document.getElementById('establishmentSelect');
+            
+            // Reset dependent dropdowns
+            resetDropdowns(3);
+            
+            if (complexCode === "0") {
+                return;
+            }
+
+            // Show loading state
+            establishmentSelect.innerHTML = '<option value="0">Loading court establishments...</option>';
+            establishmentSelect.disabled = true;
+
+            // Make POST request to fetch court establishments
+            fetch('/api/establishments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    state_code: stateCode,
+                    district_code: districtCode,
+                    complex_code: complexCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear loading message
+                establishmentSelect.innerHTML = '<option value="0">Select a court establishment...</option>';
+                
+                // Add establishments to dropdown
+                Object.entries(data).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    establishmentSelect.appendChild(option);
+                });
+                
+                // Enable the establishment dropdown
+                establishmentSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error fetching court establishments:', error);
+                establishmentSelect.innerHTML = '<option value="0">Error loading establishments. Please try again.</option>';
+            });
+        });
+
+        // Handle establishment selection
+        document.getElementById('establishmentSelect').addEventListener('change', function() {
+            const establishmentCode = this.value;
+            const stateCode = document.getElementById('stateSelect').value;
+            const districtCode = document.getElementById('districtSelect').value;
+            const complexCode = document.getElementById('complexSelect').value;
+            const courtNameSelect = document.getElementById('courtNameSelect');
+            
+            // Reset dependent dropdowns
+            resetDropdowns(4);
+            
+            if (establishmentCode === "0") {
+                return;
+            }
+
+            // Show loading state
+            courtNameSelect.innerHTML = '<option value="0">Loading court names...</option>';
+            courtNameSelect.disabled = true;
+
+            // Make POST request to fetch court names
+            fetch('/api/court_names', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    state_code: stateCode,
+                    district_code: districtCode,
+                    complex_code: complexCode,
+                    establishment_code: establishmentCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear loading message
+                courtNameSelect.innerHTML = '<option value="0">Select a court name...</option>';
+                
+                // Add court names to dropdown
+                Object.entries(data).forEach(([code, name]) => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = name;
+                    courtNameSelect.appendChild(option);
+                });
+                
+                // Enable the court name dropdown
+                courtNameSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error fetching court names:', error);
+                courtNameSelect.innerHTML = '<option value="0">Error loading court names. Please try again.</option>';
+            });
+        });
+
+        // Handle court name selection to enable/disable generate button
+        document.getElementById('courtNameSelect').addEventListener('change', function() {
+            const generateBtn = document.getElementById('generatePdfBtn');
+            generateBtn.disabled = this.value === "0";
+        });
+
+        // Set default date to today
+        const today = new Date();
+        const dateInput = document.getElementById('dateSelect');
+        dateInput.valueAsDate = today;
+
+        // Handle Generate PDF button click
+        document.getElementById('generatePdfBtn').addEventListener('click', function() {
+            const stateCode = document.getElementById('stateSelect').value;
+            const districtCode = document.getElementById('districtSelect').value;
+            const complexCode = document.getElementById('complexSelect').value;
+            const establishmentCode = document.getElementById('establishmentSelect').value;
+            const courtNameSelect = document.getElementById('courtNameSelect');
+            const selectedDate = document.getElementById('dateSelect').value;
+
+            // Format date from YYYY-MM-DD to DD-MM-YYYY
+            const [year, month, day] = selectedDate.split('-');
+            const formattedDate = `${day}-${month}-${year}`;
+
+            // Get the court name text and value
+            const selectedOption = courtNameSelect.options[courtNameSelect.selectedIndex];
+            const courtValue = selectedOption.value;
+            const courtName = selectedOption.text;
+
+            // Prepare the request data
+            const requestData = {
+                cl_court_no: courtValue,
+                court_name: courtName,
+                causelist_date: formattedDate,
+                state_code: stateCode,
+                dist_code: districtCode,
+                court_complex_code: complexCode,
+                est_code: establishmentCode
+            };
+
+            // Disable button and show loading state
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+
+            // Make POST request to generate PDF
+            fetch('/api/download_cause_list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_generated) {
+                    // Create a hidden link and trigger download
+                    const link = document.createElement('a');
+                    link.href = '/download_pdf';
+                    link.download = `cause_list_${formattedDate}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Failed to generate PDF. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                this.disabled = false;
+                this.innerHTML = 'Generate PDF';
             });
         });
     </script>
