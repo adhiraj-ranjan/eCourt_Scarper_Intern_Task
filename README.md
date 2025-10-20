@@ -56,6 +56,11 @@ source venv/bin/activate
 
 ### 4. Install Dependencies
 
+Install tesseract-ocr to path
+```bash
+apt install tesseract-ocr
+```
+
 Install all the required Python packages from `requirements.txt`.
 
 ```bash
